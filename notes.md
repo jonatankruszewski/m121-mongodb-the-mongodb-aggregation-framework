@@ -70,3 +70,84 @@ Which of the following statements are true of the $project stage?
 - [ ] $project cannot be used to assign new values to existing fields.
 
 ### Lab - Changing Document Shape with $project
+
+```sh
+var pipeline = [{$match:{"imdb.rating":{$gte:7}, genres:{$nin:["Crime", "Horror"]}, rated:{$in:["PG", "G"]}, languages: {$all:["English", "Japanese"]}}}, {$project: {_id:0, rated:"imdb.rating", title:1}}]
+load('path_to_file_2')
+validateLab2(pipeline)
+```
+
+Answer: **15**
+
+### Lab - Computing Fields
+
+```js
+//This solution projects into one single stage the length of the title.
+
+b.movies.aggregate({$project: {_id: 0, titleLength: {$size: {$split:["$title", " "]}}}},{$match: {titleLength: 1}}, {$count: "amountOfDocs"})
+
+
+//Does the same but in 2 stages: 
+
+db.movies.aggregate({$project:{_id:0, title:{$split:["$title", " "]}}}, {$project:{titleLength: {$size: "$title"}}}, {$match: {titleLength:1}}, {$count: "amountOfDocs"})
+
+//Does the same, without using aggregation:
+db.movies.find({$expr: {$eq:[{$size:{$split:["$title", " "]}}, 1]}}).count()
+```
+
+Answer: **8066**
+
+### Optional Lab - Expressions with $project
+
+- Checking an array is not empty: 
+
+```js
+{ $match: { writers: { $elemMatch: { $exists: true } } }
+```
+
+- $map. Lets us iterate over an array, element by element, performing some transformation on each element. The result of that transformation will be returned in the same place as the original element.
+- 
+
+```js
+writers: {
+  $map: {
+    input: "$writers", // needs to be an array
+    as: "writer", // name to refer each element || $$this
+    in: "$$writer" // where the work is performed
+  }
+}
+```
+
+given the following array at a key:
+
+```hs
+"writers" : [ "Vincenzo Cerami (story)", "Roberto Benigni (story)" ]
+```
+
+If we want to map it, and strip the " (story)" we will need to:
+
+``` js
+writers: {
+  $map: { // to modify the same element
+    input: "$writers", // array to modify
+    as: "writer", // each element of the array. in this case  "Roberto Benigni (story)" for example.
+    in: { // expression applied to each element of the input array. could be another one.
+      $arrayElemAt: [
+        {
+          $split: [ "$$writer", " (" ]
+        },
+        0
+      ]
+    }
+  }
+}
+```
+
+### QUIZ
+
+```js
+db.movies.aggregate(
+    {$project: {_id:0, commonToAll: {$setIntersection: ["$directors", "$cast", {$map:{input:"$writers", as: "writer", in: {$arrayElemAt:[{$split: ["$$writer", " ("]}, 0]}}}]}}},
+    {$match: {"commonToAll.0": {$exists:true} }},
+    {$count:"docs"})
+```
