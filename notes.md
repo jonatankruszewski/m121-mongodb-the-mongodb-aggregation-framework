@@ -151,3 +151,23 @@ db.movies.aggregate(
     {$match: {"commonToAll.0": {$exists:true} }},
     {$count:"docs"})
 ```
+
+The official solution includes a matching stage with a `{directors: {$elemMatch: {$exists: true}}}` to filter in the beginning null values for the 3 fields.
+
+Then, afterwards mapping `writers`, adds a projection stage:
+
+```js
+{$project: {
+      labor_of_love: {
+        $gt: [ // retrieves a boolean. true/false.
+          { $size: { $setIntersection: ["$cast", "$directors", "$writers"] } },
+          0
+        ]
+      }
+    }
+  },
+  {
+    $match: { labor_of_love: true }
+  }
+  ```
+
