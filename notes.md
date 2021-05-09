@@ -196,15 +196,35 @@ Then, afterwards mapping `writers`, adds a projection stage:
 
 First methor
 less than 5%, and collection more than 100 docs, and sample is the first stage.
+
 - Pseudo random cursor will select the documents.
-- else: 
+- else:
 in memory random sort. (memory restrictions of $sort)
 
 ## Lab: Using Cursor-like Stages
 
 ```js
-db.movies.aggregate({$match:{countries: {$in:["USA"]}, cast:{$in:["Sandra Bullock", "Tom Hanks", "Julia Roberts", "Kevin Spacey", "George Clooney", ]}, "tomatoes.viewer.rating":{$gte:3}}},
- {$project: {_id: 0, reviews: "$tomatoes.viewer.rating", title: 1, num_favs: {$size: {$filter: 
- { input: "$cast", as: "actor", cond: {$eq:["$$actor", {$in:[ "Sandra Bullock", "Tom Hanks", "Julia Roberts", "Kevin Spacey", "George Clooney"]}] } } } }},
- {$sort: {num_favs: 1, reviews:1, title: 1}})
+var favorites = [
+  "Sandra Bullock",
+  "Tom Hanks",
+  "Julia Roberts",
+  "Kevin Spacey",
+  "George Clooney"
+  ]
+
+db.movies.aggregate({$match: {cast:{$in:favorites}, "tomatoes.viewer.rating":{$gte: 3}, countries: {$in:["USA"]}}}, {$project: {title: 1, _id: 0, tomatoes:1, num_favs:{$size:{$filter:{input:"$cast", as:"actor", cond: {$in:["$$actor", favorites]}}}}}}, {$sort: {num_favs: -1, "tomatoes.viewer.rating": -1, title: -1}}, {$skip: 24}, {$limit: 1})
+```
+
+That is using filter. Another way, would had been to set the intersection between the casts array and favorites, and calculate its size:
+
+```js
+var favorites = [
+  "Sandra Bullock",
+  "Tom Hanks",
+  "Julia Roberts",
+  "Kevin Spacey",
+  "George Clooney"
+]
+num_favs: {$size: {$setIntersection: ["$cast", favorites]}}
+
 ```
