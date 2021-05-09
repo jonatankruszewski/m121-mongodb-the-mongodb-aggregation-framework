@@ -182,6 +182,11 @@ Then, afterwards mapping `writers`, adds a projection stage:
 - geoQuery. First stage in the pipeline.
 - $near can't use $text
 - Takes a lot of arguments. Required. near., distanceField, spherical: true/false
+- For geoqueries.
+- Must be the first stage.
+- Can't use $near in the predicate.
+- Can be used on charted collections ($near can't)
+- $near can't use other indexes (like $text)
 
 ### Lecture: cursor like stage
 
@@ -201,7 +206,7 @@ less than 5%, and collection more than 100 docs, and sample is the first stage.
 - else:
 in memory random sort. (memory restrictions of $sort)
 
-## Lab: Using Cursor-like Stages
+### Lab: Using Cursor-like Stages
 
 ```js
 var favorites = [
@@ -226,5 +231,81 @@ var favorites = [
   "George Clooney"
 ]
 num_favs: {$size: {$setIntersection: ["$cast", favorites]}}
+```
 
+At the end of the day, setIntersection acts like an inner join, as well as a filter that has as cond an $in operator.
+
+### Lab: Bringing all together
+
+This exercises is a little bit tricky.
+First we need to extract the max and min votes:
+
+```js
+db.movies.aggregate({
+  $group: {
+    _id: null,
+    minVotes: { $min: "$imdb.votes" },
+    maxVotes: { $max: "$imdb.votes" },
+  },
+})
+```
+
+Which are 5 and 1521105.
+
+A normalize function looks like this:
+
+```js
+const normalizeFunction = (x, a = 1, b = 10,  minX,  maxX) => {
+  a + ((x - minX) * (b - a)) / (maxX - minX);
+};
+```
+
+```js
+db.movies.aggregate([
+    {
+      $match: {
+        languages: { $in: ["English"] },
+        "imdb.rating": { $gte: 1 },
+        "imdb.votes": { $gte: 1 },
+        year: { $gte: 1990 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        title: 1,
+        rating: "$imdb.rating",
+        votes: "$imdb.votes",
+      },
+    },
+    {
+      $addFields: {
+        normalized_rating: {
+          $avg: [
+            "$rating",
+            {
+              $add: [
+                1,
+                {
+                  $divide: [
+                    {
+                      $multiply: [
+                        { $subtract: ["$votes", 5] },
+                        { $subtract: [10, 1] },
+                      ],
+                    },
+                    {
+                      $subtract: [1521105, 5],
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    { $sort: { normalized_rating: 1 } },
+    { $limit: 1 },
+  ])
 ```
