@@ -4,7 +4,7 @@
 
 ### Lecture $match: Filtering Documents
 
-- $match: might be use multiple times, should come as early as possible. 
+- $match: might be use multiple times, should come as early as possible.
 - Aggregation operator
 - Think of it as a filter.
 - Uses standard query operators
@@ -99,22 +99,21 @@ Answer: **8066**
 
 ### Optional Lab - Expressions with $project
 
-- Checking an array is not empty: 
+- Checking an array is not empty:
 
 ```js
 { $match: { writers: { $elemMatch: { $exists: true } } }
 ```
 
 - $map. Lets us iterate over an array, element by element, performing some transformation on each element. The result of that transformation will be returned in the same place as the original element.
-- 
 
 ```js
 writers: {
-  $map: {
-    input: "$writers", // needs to be an array
-    as: "writer", // name to refer each element || $$this
-    in: "$$writer" // where the work is performed
-  }
+ $map: {
+ input: "$writers", // needs to be an array
+ as: "writer", // name to refer each element || $$this
+ in: "$$writer" // where the work is performed
+ }
 }
 ```
 
@@ -128,18 +127,18 @@ If we want to map it, and strip the " (story)" we will need to:
 
 ``` js
 writers: {
-  $map: { // to modify the same element
-    input: "$writers", // array to modify
-    as: "writer", // each element of the array. in this case  "Roberto Benigni (story)" for example.
-    in: { // expression applied to each element of the input array. could be another one.
-      $arrayElemAt: [
-        {
-          $split: [ "$$writer", " (" ]
-        },
-        0
-      ]
-    }
-  }
+ $map: { // to modify the same element
+ input: "$writers", // array to modify
+ as: "writer", // each element of the array. in this case "Roberto Benigni (story)" for example.
+ in: { // expression applied to each element of the input array. could be another one.
+ $arrayElemAt: [
+ {
+ $split: [ "$$writer", " (" ]
+ },
+ 0
+ ]
+ }
+ }
 }
 ```
 
@@ -147,9 +146,9 @@ writers: {
 
 ```js
 db.movies.aggregate(
-    {$project: {_id:0, commonToAll: {$setIntersection: ["$directors", "$cast", {$map:{input:"$writers", as: "writer", in: {$arrayElemAt:[{$split: ["$$writer", " ("]}, 0]}}}]}}},
-    {$match: {"commonToAll.0": {$exists:true} }},
-    {$count:"docs"})
+ {$project: {_id:0, commonToAll: {$setIntersection: ["$directors", "$cast", {$map:{input:"$writers", as: "writer", in: {$arrayElemAt:[{$split: ["$$writer", " ("]}, 0]}}}]}}},
+ {$match: {"commonToAll.0": {$exists:true} }},
+ {$count:"docs"})
 ```
 
 The official solution includes a matching stage with a `{directors: {$elemMatch: {$exists: true}}}` to filter in the beginning null values for the 3 fields.
@@ -158,16 +157,54 @@ Then, afterwards mapping `writers`, adds a projection stage:
 
 ```js
 {$project: {
-      labor_of_love: {
-        $gt: [ // retrieves a boolean. true/false.
-          { $size: { $setIntersection: ["$cast", "$directors", "$writers"] } },
-          0
-        ]
-      }
-    }
-  },
-  {
-    $match: { labor_of_love: true }
-  }
-  ```
+ labor_of_love: {
+ $gt: [ // retrieves a boolean. true/false.
+ { $size: { $setIntersection: ["$cast", "$directors", "$writers"] } },
+ 0
+ ]
+ }
+ }
+ },
+ {
+ $match: { labor_of_love: true }
+ }
+ ```
 
+## CHAPTER 2
+
+### Lecture: addFields
+
+- $addFields, similar to $project. Only allow s to add new fields, or modify existing ones.
+- Usually used in composition with $project. In the $project stage, you can filter the subdocuments, and in the $addFields map them to new values {gravity: gravity.value}. Cleaner and more organized in larger pipelines.
+
+### Lecture: geoNear Stage
+
+- geoQuery. First stage in the pipeline.
+- $near can't use $text
+- Takes a lot of arguments. Required. near., distanceField, spherical: true/false
+
+### Lecture: cursor like stage
+
+- Sort, skip, limit, count. (same as cursor methods)
+- Without sort, the default order is the inserted one.
+- -1 === descending, 1=== ascending
+
+### $sample
+
+- Selects a set of random documents. 2 algoritmics
+- {$sample: {}}
+
+First methor
+less than 5%, and collection more than 100 docs, and sample is the first stage.
+- Pseudo random cursor will select the documents.
+- else: 
+in memory random sort. (memory restrictions of $sort)
+
+## Lab: Using Cursor-like Stages
+
+```js
+db.movies.aggregate({$match:{countries: {$in:["USA"]}, cast:{$in:["Sandra Bullock", "Tom Hanks", "Julia Roberts", "Kevin Spacey", "George Clooney", ]}, "tomatoes.viewer.rating":{$gte:3}}},
+ {$project: {_id: 0, reviews: "$tomatoes.viewer.rating", title: 1, num_favs: {$size: {$filter: 
+ { input: "$cast", as: "actor", cond: {$eq:["$$actor", {$in:[ "Sandra Bullock", "Tom Hanks", "Julia Roberts", "Kevin Spacey", "George Clooney"]}] } } } }},
+ {$sort: {num_favs: 1, reviews:1, title: 1}})
+```
