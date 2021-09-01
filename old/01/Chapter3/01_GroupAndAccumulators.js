@@ -14,7 +14,7 @@ db.movies.aggregate([
       },
     },
     {
-      $set: {
+      $addFields: {
         average_rating: { $trunc: ["$average_rating", 4] },
         average_deviation: { $trunc: ["$average_deviation", 4] },
       },

@@ -10,4 +10,4 @@ db.solarSystem.aggregate([{
     "name": 1,
     "hasMoons": { "$gt": ["$numberOfMoons", 0] }
   }
-}], { "allowDiskUse": true});
+}]);
