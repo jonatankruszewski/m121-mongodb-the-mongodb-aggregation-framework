@@ -33,7 +33,7 @@ Which of the following is true about pipelines and the Aggregation Framework?
 - ```$$UPPERCASE = system variable```
 - ```$$lowercase = user variable```
 
-### QUIZ
+### QUIZ Aggregation Structure and Sytnax
 
 Which of the following statements is true?
 
@@ -88,6 +88,7 @@ load('full_path_to_file')
 var pipeline = [{$match:{"imdb.rating":{$gte:7}, genres:{$nin:["Crime", "Horror"]}, rated:{$in:["PG", "G"]}, languages: {$all:["English", "Japanese"]}}}]
 validateLab1(pipeline)
 ```
+
 Another working pipeline:
 
 ```sh
@@ -170,7 +171,7 @@ writers: {
 
 given the following array at a key:
 
-```hs
+```sh
 "writers" : [ "Vincenzo Cerami (story)", "Roberto Benigni (story)" ]
 ```
 
@@ -182,18 +183,11 @@ writers: {
  input: "$writers", // array to modify
  as: "writer", // each element of the array. in this case "Roberto Benigni (story)" for example.
  in: { // expression applied to each element of the input array. could be another one.
- $arrayElemAt: [
- {
- $split: [ "$$writer", " (" ]
- },
- 0
- ]
- }
- }
+ $arrayElemAt: [ { $split: [ "$$writer", " (" ] }, 0 ] } }
 }
 ```
 
-### QUIZ
+### QUIZ Map
 
 ```js
 db.movies.aggregate(
@@ -210,15 +204,8 @@ Then, afterwards mapping `writers`, adds a projection stage:
 {$project: {
  labor_of_love: {
  $gt: [ // retrieves a boolean. true/false.
- { $size: { $setIntersection: ["$cast", "$directors", "$writers"] } },
- 0
- ]
- }
- }
- },
- {
- $match: { labor_of_love: true }
- }
+ { $size: { $setIntersection: ["$cast", "$directors", "$writers"] } },   0 ] } } },
+ { $match: { labor_of_love: true } }
  ```
 
 ## CHAPTER 2
@@ -238,7 +225,7 @@ Then, afterwards mapping `writers`, adds a projection stage:
 - For geoqueries.
 - Must be the first stage.
 - Can't use $near in the predicate.
-- Can be used on sharde d collections ($near can't)
+- Can be used on sharded collections ($near can't)
 - $near can't use other indexes (like $text)
 
 ### Lecture: cursor like stage
@@ -512,7 +499,7 @@ Answer:
 }
 ```
 
-### QUIZ
+### QUIZ Lookup
 
 Which of the following statements is true about the $lookup stage?
 
@@ -563,7 +550,7 @@ Answer:
 - $graphLookup
 - Similar to $lookUp
 
-### QUIZ
+### QUIZ Graphlookup
 
 Which of the following statements apply to $graphLookup operator? check all that apply
 
@@ -611,7 +598,7 @@ Which of the following statements is/are correct? Check all that apply.
 - [X] connectFromField value will be use to match connectToField in a recursive match
 - [ ] startWith indicates the index that should be use to execute the recursive match
 
-### QUIZ
+### QUIZ Graph Lookup 2
 
 Which of the following statements are incorrect? Check all that apply
 
@@ -632,7 +619,7 @@ Which of the following statements are incorrect? Check all that apply
 - Our front collection can not be sharded
 - Even tough using allowDiskUsage might exceed the 100 mb ram per pipeline
 
-### QUIZ
+### QUIZ GraphLookUp
 
 Consider:
 
@@ -657,7 +644,7 @@ Consider:
 - Search bar => Gets you some prompts results.
 - You can create a facet by using $sortByCount: '$fieldName'
 
-### QUIZ
+### QUIZ $facets
 
 Which of the following aggregation pipelines are single facet queries?
 
@@ -689,6 +676,7 @@ Assuming that field1 is composed of double values, ranging between 0 and Infinit
 -[X] {'$bucket': { 'groupBy': '$field2', 'boundaries': [ "a", "asdas", "z" ], 'default': 'Others'}}
 
 Note: the middle one fails because it can not allocate values under 0.4 (errors)
+
 ### Auto Bucketing
 
 - We can create them automatically using $bucketAuto. Instead of boundaries, we have the 'buckets' field.
@@ -814,7 +802,6 @@ Answer: 1
 - Prune will exclude all fields at the current document level without further inspection.
 - Keep will do the opposite.
 - Descend mantains the field excpet for arrays and sub documents
-- 
 - Protect information from unatohorizad acces
 - $$DESCEND
 - $$PRUNE - remove
@@ -851,7 +838,7 @@ db.employees
 - if errors, rollsback
 - seed a collections, taking snapshots, migrations
   
-### QUIZ
+### QUIZ $out
 
 Which of the following statements is true regarding the $out stage?
 
@@ -880,7 +867,7 @@ Which of the following statements is true regarding the $out stage?
 }
 ```
 
-### QUIZ
+### QUIZ $merge 1
 
 In MongoDB 4.2, the $merge Aggregation stage:
 
@@ -888,19 +875,17 @@ In MongoDB 4.2, the $merge Aggregation stage:
 - [X] can output to a sharded collection.
 - [X] can merge documents from an Aggregation and a target collection.
 
-
-### $merge
+### QUIZ $merge 2
 
 - If nothing matches, probably you will want to add (insert)
 - if match, maybe you want to merge, or to replace.
 - whenNotMatched : "insert" | 'discord' | 'fail'
-- whenMatched: "merge" | 'replace' | 'keepExisting' | 'fail' | 
+- whenMatched: "merge" | 'replace' | 'keepExisting' | 'fail' |
 - Those two fields could be added to the options.
 - you can add a pipiele too in whenMatched. $$new will refer to te new document.
 - you can use also a field called let to create new variables
 
-
-### $merge
+### Quiz $merge 3
 
 Consider an Aggregation Pipeline using the new $merge stage that outputs to the employee_data collection.
 
@@ -920,12 +905,11 @@ The right option:
 
 ### $merge specific cases
 
- - INSERT INTO T1 SELECT * FROM T2
- - Rollups
- - Merge data from 2 apis related to a user
+- INSERT INTO T1 SELECT * FROM T2
+- Rollups
+- Merge data from 2 apis related to a user
 
-
-### QUIZ
+### QUIZ $merge 4
 
 The right option
 
@@ -964,7 +948,7 @@ Which of the following $merge stages will perform all of the above functionality
 - Views are public! Do not share sensitive info.
 - Don't contain data, they are created in demand. Read only.
 
-### QUIZ
+### QUIZ Views
 
 Which of the following statements are true regarding MongoDB Views?
 
@@ -987,7 +971,7 @@ Which of the following statements are true regarding MongoDB Views?
 - 100mb of ram per stage
 - {allowDiskUse: true} => last resource.
 
-### QUIZ
+### QUIZ Aggregation performance
 
 With regards to aggregation performance, which of the following are true?
 
@@ -1002,14 +986,13 @@ With regards to aggregation performance, which of the following are true?
 - Except on $out, $facet, $lookup, $graphLookup which the primary shard will do the merging.
 - Always use limit before skip (if you want to skip the first 20, just pass 25 to limit)
 
-
-### QUIZ
+### QUIZ Aggregation on Sharded Clusters
 
 What operators will cause a merge stage on the primary shard for a database?
 
-- [ ] $out
+- [X] $out
 - [ ] $group
-- [ ] $lookup
+- [X] $lookup
 
 ### Optimizations part 2
 
@@ -1017,9 +1000,8 @@ What operators will cause a merge stage on the primary shard for a database?
 - CACHED_PLAN is better than fetch
 - Avoid needless projects
 - use $map, $reduce, $filter inside $project for complicated queries
-- 
 
-### QUIZ
+### QUIZ Optimizations
 
 Which of the following statements is/are true?
 
@@ -1027,5 +1009,3 @@ Which of the following statements is/are true?
 - [X] Causing a merge in a sharded deployment will cause all subsequent pipeline stages to be performed in the same location as the merge
 - [X] The Aggregation Framework will automatically reorder stages in certain conditions
 - [X] The Aggregation Framework can automatically project fields if the shape of the final document is only dependent upon those fields in the input document.
-
-****
